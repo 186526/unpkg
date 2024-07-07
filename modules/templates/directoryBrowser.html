@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Index of ${data.filename}</title>
+  <style>
+    body {
+      font-size: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding: 0 10px 5px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font: .85em Monaco, monospace
+    }
+
+    tr.even {
+      background-color: #eee
+    }
+
+    th {
+      text-align: left
+    }
+
+    td,
+    th {
+      padding: .1em .25em
+    }
+
+    .version-wrapper {
+      line-height: 2.25em;
+      float: right
+    }
+
+    #version {
+      font-size: 1em
+    }
+
+    address {
+      text-align: right
+    }
+  </style>
+</head>
+
+<body>
+  <div class="version-wrapper">
+    <select id="version">
+      ${data.avaliableVersions.map(k=>`<option value="${k}">${k}</option>`)}
+    </select>
+  </div>
+  <h1>Index of ${data.filename}</h1>
+  <script>
+    var s = document.getElementById('version')
+      , v = s.value
+    s.onchange = function () {
+      window.location.href = window.location.href.replace('@' + v, '@' + s.value)
+    }
+  </script>
+  <hr />
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Size</th>
+        <th>Last Modified</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="even">
+        <td>
+          <a title="LICENSE" href="LICENSE">LICENSE</a>
+        </td>
+        <td>text/plain</td>
+        <td>1.09 kB</td>
+        <td>1985-10-26T08:15:00.000Z</td>
+      </tr>
+      <tr class="odd">
+        <td>
+          <a title="README.md" href="README.md">README.md</a>
+        </td>
+        <td>text/markdown</td>
+        <td>1.16 kB</td>
+        <td>1985-10-26T08:15:00.000Z</td>
+      </tr>
+      <tr class="even">
+        <td>
+          <a title="cjs" href="cjs/">cjs</a>
+        </td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr class="odd">
+        <td>
+          <a title="index.js" href="index.js">index.js</a>
+        </td>
+        <td>application/javascript</td>
+        <td>190 B</td>
+        <td>1985-10-26T08:15:00.000Z</td>
+      </tr>
+      <tr class="even">
+        <td>
+          <a title="jsx-dev-runtime.js" href="jsx-dev-runtime.js">jsx-dev-runtime.js</a>
+        </td>
+        <td>application/javascript</td>
+        <td>222 B</td>
+        <td>1985-10-26T08:15:00.000Z</td>
+      </tr>
+      <tr class="odd">
+        <td>
+          <a title="jsx-runtime.js" href="jsx-runtime.js">jsx-runtime.js</a>
+        </td>
+        <td>application/javascript</td>
+        <td>214 B</td>
+        <td>1985-10-26T08:15:00.000Z</td>
+      </tr>
+      <tr class="even">
+        <td>
+          <a title="package.json" href="package.json">package.json</a>
+        </td>
+        <td>application/json</td>
+        <td>999 B</td>
+        <td>1985-10-26T08:15:00.000Z</td>
+      </tr>
+      <tr class="odd">
+        <td>
+          <a title="react.shared-subset.js" href="react.shared-subset.js">react.shared-subset.js</a>
+        </td>
+        <td>application/javascript</td>
+        <td>218 B</td>
+        <td>1985-10-26T08:15:00.000Z</td>
+      </tr>
+      <tr class="even">
+        <td>
+          <a title="umd" href="umd/">umd</a>
+        </td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr />
+  <address>react@18.3.1</address>
+</body>
+
+</html>

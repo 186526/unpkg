@@ -1,29 +1,29 @@
-import { renderToString, renderToStaticMarkup } from 'react-dom/server';
 import semver from 'semver';
 
-import BrowseApp from '../client/browse/App.js';
-import MainTemplate from '../templates/MainTemplate.js';
 import asyncHandler from '../utils/asyncHandler.js';
-import getScripts from '../utils/getScripts.js';
-import { createElement, createHTML } from '../utils/markup.js';
 import { getVersionsAndTags } from '../utils/npm.js';
 
-const doctype = '<!DOCTYPE html>';
-const globalURLs =
-  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging'
-    ? {
-        '@emotion/core': '/@emotion/core@10.0.6/dist/core.umd.min.js',
-        react: '/react@16.8.6/umd/react.production.min.js',
-        'react-dom': '/react-dom@16.8.6/umd/react-dom.production.min.js'
-      }
-    : {
-        '@emotion/core': '/@emotion/core@10.0.6/dist/core.umd.min.js',
-        react: '/react@16.8.6/umd/react.development.js',
-        'react-dom': '/react-dom@16.8.6/umd/react-dom.development.js'
-      };
+import { filesize } from 'filesize';
 
 function byVersion(a, b) {
   return semver.lt(a, b) ? -1 : semver.gt(a, b) ? 1 : 0;
+}
+
+function sortObjectByKeys(obj) {
+  const sortedKeys = Object.keys(obj).sort();
+  const newObj = {};
+  sortedKeys
+    .filter(k => obj[k].type === 'directory')
+    .forEach(key => {
+      newObj[key] = obj[key];
+    });
+
+  sortedKeys
+    .filter(k => obj[k].type !== 'directory')
+    .forEach(key => {
+      newObj[key] = obj[key];
+    });
+  return newObj;
 }
 
 async function getAvailableVersions(packageName, log) {
@@ -43,20 +43,116 @@ async function serveBrowsePage(req, res) {
     filename: req.filename,
     target: req.browseTarget
   };
-  const content = createHTML(renderToString(createElement(BrowseApp, data)));
-  const elements = getScripts('browse', 'iife', globalURLs);
 
-  const html =
-    doctype +
-    renderToStaticMarkup(
-      createElement(MainTemplate, {
-        title: `UNPKG - ${req.packageName}`,
-        description: `The CDN for ${req.packageName}`,
-        data,
-        content,
-        elements
-      })
-    );
+  const html = `<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Index of ${data.filename}</title>
+  <style>
+    body {
+      font-size: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding: 0 10px 5px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font: .85em Monaco, monospace;
+      overflow-x: auto;
+      white-space: nowrap
+    }
+
+    tr.even {
+      background-color: #eee
+    }
+
+    th {
+      text-align: left
+    }
+
+    td,
+    th {
+      padding: .1em .25em
+    }
+
+    .version-wrapper {
+      line-height: 2.25em;
+      float: right
+    }
+
+    #version {
+      font-size: 1em
+    }
+
+    address {
+      text-align: right
+    }
+  </style>
+</head>
+
+<body>
+  <div class="version-wrapper">
+    <select id="version">
+      <option value="${data.packageVersion}" selected>${
+    data.packageVersion
+  }</option>
+      ${data.availableVersions
+        .filter(k => k !== data.packageVersion)
+        .map(k => `<option value="${k}">${k}</option>`)
+        .join('')}
+    </select>
+  </div>
+  <h1>Index of ${data.filename}</h1>
+  <script>
+    var s = document.getElementById('version')
+      , v = s.value
+    s.onchange = function () {
+      window.location.href = window.location.href.replace('@' + v, '@' + s.value)
+    }
+  </script>
+  <hr />
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Size</th>
+        <th>Integrity</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${(() => {
+        const answers = [];
+        const files = sortObjectByKeys(data.target.details);
+        for (let file in files) {
+          let fileName = file.replace(data.filename, '');
+          if (files[file].type === 'directory') {
+            fileName += '/';
+            files[file].size = '-';
+            files[file].contentType = '-';
+            files[file].integrity = '-';
+          } else {
+            files[file].size = filesize(files[file].size);
+          }
+          answers.push(`<tr class="${answers.length % 2 ? 'even' : 'odd'}">
+            <td><a href="${fileName}" title="${fileName}">${fileName}</a></td>
+            <td>${files[file].contentType}</td>
+            <td>${files[file].size}</td>
+            <td>${files[file].integrity}</td>`);
+        }
+        return answers.join('');
+      })()}
+    </tbody>
+  </table>
+  <hr />
+  <address>${data.packageName}@${data.packageVersion}</address>
+</body>
+
+</html>`;
 
   res
     .set({

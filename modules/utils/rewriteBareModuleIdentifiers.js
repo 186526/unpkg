@@ -22,8 +22,8 @@ export default function rewriteBareModuleIdentifiers(code, packageConfig) {
     retainLines: true,
     plugins: [
       unpkgRewrite(origin, dependencies),
-      '@babel/plugin-proposal-optional-chaining',
-      '@babel/plugin-proposal-nullish-coalescing-operator'
+      '@babel/plugin-transform-optional-chaining',
+      '@babel/plugin-transform-nullish-coalescing-operator'
     ]
   };
 

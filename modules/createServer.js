@@ -4,12 +4,10 @@ import morgan from 'morgan';
 
 import serveDirectoryBrowser from './actions/serveDirectoryBrowser.js';
 import serveDirectoryMetadata from './actions/serveDirectoryMetadata.js';
-import serveFileBrowser from './actions/serveFileBrowser.js';
 import serveFileMetadata from './actions/serveFileMetadata.js';
 import serveFile from './actions/serveFile.js';
 import serveMainPage from './actions/serveMainPage.js';
 import serveModule from './actions/serveModule.js';
-import serveStats from './actions/serveStats.js';
 
 import allowQuery from './middleware/allowQuery.js';
 import findEntry from './middleware/findEntry.js';
@@ -20,6 +18,7 @@ import validateFilename from './middleware/validateFilename.js';
 import validatePackagePathname from './middleware/validatePackagePathname.js';
 import validatePackageName from './middleware/validatePackageName.js';
 import validatePackageVersion from './middleware/validatePackageVersion.js';
+import isBrowser from './middleware/isBrowser.js';
 
 function createApp(callback) {
   const app = express();
@@ -43,34 +42,8 @@ export default function createServer() {
     app.use(requestLog);
 
     app.get('/', serveMainPage);
-    app.get('/api/stats', serveStats);
 
     app.use(redirectLegacyURLs);
-
-    app.use(
-      '/browse',
-      createApp(app => {
-        app.enable('strict routing');
-
-        app.get(
-          '*/',
-          noQuery(),
-          validatePackagePathname,
-          validatePackageName,
-          validatePackageVersion,
-          serveDirectoryBrowser
-        );
-
-        app.get(
-          '*',
-          noQuery(),
-          validatePackagePathname,
-          validatePackageName,
-          validatePackageVersion,
-          serveFileBrowser
-        );
-      })
-    );
 
     // We need to route in this weird way because Express
     // doesn't have a way to route based on query params.
@@ -131,10 +104,15 @@ export default function createServer() {
       }
     });
 
-    // Send old */ requests to the new /browse UI.
-    app.get('*/', (req, res) => {
-      res.redirect(302, '/browse' + req.url);
-    });
+    app.get(
+      '*/',
+      isBrowser(),
+      noQuery(),
+      validatePackagePathname,
+      validatePackageName,
+      validatePackageVersion,
+      serveDirectoryBrowser
+    );
 
     app.get(
       '*',
