@@ -19,110 +19,116 @@ import validatePackagePathname from './middleware/validatePackagePathname.js';
 import validatePackageName from './middleware/validatePackageName.js';
 import validatePackageVersion from './middleware/validatePackageVersion.js';
 import isBrowser from './middleware/isBrowser.js';
+import checkCached from './middleware/checkCached.js';
 
 function createApp(callback) {
-  const app = express();
-  callback(app);
-  return app;
+    const app = express();
+    callback(app);
+    return app;
 }
 
 export default function createServer() {
-  return createApp(app => {
-    app.disable('x-powered-by');
-    app.enable('trust proxy');
-    app.enable('strict routing');
+    return createApp(app => {
+        app.disable('x-powered-by');
+        app.enable('trust proxy');
+        app.enable('strict routing');
 
-    if (process.env.NODE_ENV === 'development') {
-      app.use(morgan('dev'));
-    }
+        if (process.env.NODE_ENV === 'development') {
+            app.use(morgan('dev'));
+        }
 
-    app.use(cors());
-    app.use(express.static('public', { maxAge: '1y' }));
+        app.use(cors());
+        app.use(express.static('public', { maxAge: '1y' }));
 
-    app.use(requestLog);
+        app.use(requestLog);
 
-    app.get('/', serveMainPage);
+        app.get('/', serveMainPage);
 
-    app.use(redirectLegacyURLs);
+        app.use(redirectLegacyURLs);
 
-    // We need to route in this weird way because Express
-    // doesn't have a way to route based on query params.
-    const metadataApp = createApp(app => {
-      app.enable('strict routing');
+        // We need to route in this weird way because Express
+        // doesn't have a way to route based on query params.
+        const metadataApp = createApp(app => {
+            app.enable('strict routing');
 
-      app.get(
-        '*/',
-        allowQuery('meta'),
-        validatePackagePathname,
-        validatePackageName,
-        validatePackageVersion,
-        validateFilename,
-        serveDirectoryMetadata
-      );
+            app.get(
+                '*/',
+                allowQuery('meta'),
+                validatePackagePathname,
+                validatePackageName,
+                validatePackageVersion,
+                validateFilename,
+                checkCached,
+                serveDirectoryMetadata
+            );
 
-      app.get(
-        '*',
-        allowQuery('meta'),
-        validatePackagePathname,
-        validatePackageName,
-        validatePackageVersion,
-        validateFilename,
-        serveFileMetadata
-      );
+            app.get(
+                '*',
+                allowQuery('meta'),
+                validatePackagePathname,
+                validatePackageName,
+                validatePackageVersion,
+                validateFilename,
+                checkCached,
+                serveFileMetadata
+            );
+        });
+
+        app.use((req, res, next) => {
+            if (req.query.meta != null) {
+                metadataApp(req, res);
+            } else {
+                next();
+            }
+        });
+
+        // We need to route in this weird way because Express
+        // doesn't have a way to route based on query params.
+        const moduleApp = createApp(app => {
+            app.enable('strict routing');
+
+            app.get(
+                '*',
+                allowQuery('module'),
+                validatePackagePathname,
+                validatePackageName,
+                validatePackageVersion,
+                validateFilename,
+                checkCached,
+                findEntry,
+                serveModule
+            );
+        });
+
+        app.use((req, res, next) => {
+            if (req.query.module != null) {
+                moduleApp(req, res);
+            } else {
+                next();
+            }
+        });
+
+        app.get(
+            '*/',
+            isBrowser(),
+            noQuery(),
+            validatePackagePathname,
+            validatePackageName,
+            validatePackageVersion,
+            checkCached,
+            serveDirectoryBrowser
+        );
+
+        app.get(
+            '*',
+            noQuery(),
+            validatePackagePathname,
+            validatePackageName,
+            validatePackageVersion,
+            validateFilename,
+            checkCached,
+            findEntry,
+            serveFile
+        );
     });
-
-    app.use((req, res, next) => {
-      if (req.query.meta != null) {
-        metadataApp(req, res);
-      } else {
-        next();
-      }
-    });
-
-    // We need to route in this weird way because Express
-    // doesn't have a way to route based on query params.
-    const moduleApp = createApp(app => {
-      app.enable('strict routing');
-
-      app.get(
-        '*',
-        allowQuery('module'),
-        validatePackagePathname,
-        validatePackageName,
-        validatePackageVersion,
-        validateFilename,
-        findEntry,
-        serveModule
-      );
-    });
-
-    app.use((req, res, next) => {
-      if (req.query.module != null) {
-        moduleApp(req, res);
-      } else {
-        next();
-      }
-    });
-
-    app.get(
-      '*/',
-      isBrowser(),
-      noQuery(),
-      validatePackagePathname,
-      validatePackageName,
-      validatePackageVersion,
-      serveDirectoryBrowser
-    );
-
-    app.get(
-      '*',
-      noQuery(),
-      validatePackagePathname,
-      validatePackageName,
-      validatePackageVersion,
-      validateFilename,
-      findEntry,
-      serveFile
-    );
-  });
 }

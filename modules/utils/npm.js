@@ -1,15 +1,17 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import url from 'url';
 import https from 'https';
 import gunzip from 'gunzip-maybe';
 import LRUCache from 'lru-cache';
+import stream from 'stream';
 
 import bufferStream from './bufferStream.js';
 
 const npmRegistryURL =
-  process.env.NPM_REGISTRY_URL || 'https://registry.npmjs.org';
+    process.env.NPM_REGISTRY_URL || 'https://registry.npmjs.org';
 
 const agent = new https.Agent({
-  keepAlive: true
+    keepAlive: true
 });
 
 const oneMegabyte = 1024 * 1024;
@@ -17,72 +19,72 @@ const oneSecond = 1000;
 const oneMinute = oneSecond * 60;
 
 const cache = new LRUCache({
-  max: oneMegabyte * 40,
-  length: Buffer.byteLength,
-  maxAge: oneSecond
+    max: oneMegabyte * 40,
+    length: Buffer.byteLength,
+    maxAge: oneSecond
 });
 
 const notFound = '';
 
 function get(options) {
-  return new Promise((accept, reject) => {
-    https.get(options, accept).on('error', reject);
-  });
+    return new Promise((accept, reject) => {
+        https.get(options, accept).on('error', reject);
+    });
 }
 
 function isScopedPackageName(packageName) {
-  return packageName.startsWith('@');
+    return packageName.startsWith('@');
 }
 
 function encodePackageName(packageName) {
-  return isScopedPackageName(packageName)
-    ? `@${encodeURIComponent(packageName.substring(1))}`
-    : encodeURIComponent(packageName);
+    return isScopedPackageName(packageName)
+        ? `@${encodeURIComponent(packageName.substring(1))}`
+        : encodeURIComponent(packageName);
 }
 
 async function fetchPackageInfo(packageName, log) {
-  const name = encodePackageName(packageName);
-  const infoURL = `${npmRegistryURL}/${name}`;
+    const name = encodePackageName(packageName);
+    const infoURL = `${npmRegistryURL}/${name}`;
 
-  log.debug('Fetching package info for %s from %s', packageName, infoURL);
+    log.debug('Fetching package info for %s from %s', packageName, infoURL);
 
-  const { hostname, pathname } = url.parse(infoURL);
-  const options = {
-    agent: agent,
-    hostname: hostname,
-    path: pathname,
-    headers: {
-      Accept: 'application/json'
+    const { hostname, pathname } = url.parse(infoURL);
+    const options = {
+        agent: agent,
+        hostname: hostname,
+        path: pathname,
+        headers: {
+            Accept: 'application/json'
+        }
+    };
+
+    const res = await get(options);
+
+    if (res.statusCode === 200) {
+        return bufferStream(res).then(JSON.parse);
     }
-  };
 
-  const res = await get(options);
+    if (res.statusCode === 404) {
+        return null;
+    }
 
-  if (res.statusCode === 200) {
-    return bufferStream(res).then(JSON.parse);
-  }
+    const content = (await bufferStream(res)).toString('utf-8');
 
-  if (res.statusCode === 404) {
+    log.error(
+        'Error fetching info for %s (status: %s)',
+        packageName,
+        res.statusCode
+    );
+    log.error(content);
+
     return null;
-  }
-
-  const content = (await bufferStream(res)).toString('utf-8');
-
-  log.error(
-    'Error fetching info for %s (status: %s)',
-    packageName,
-    res.statusCode
-  );
-  log.error(content);
-
-  return null;
 }
 
 async function fetchVersionsAndTags(packageName, log) {
-  const info = await fetchPackageInfo(packageName, log);
-  return info && info.versions
-    ? { versions: Object.keys(info.versions), tags: info['dist-tags'] }
-    : null;
+    const info = await fetchPackageInfo(packageName, log);
+    return info && info.versions
+        ? { versions: Object.keys(info.versions), tags: info['dist-tags'] }
+        : null;
 }
 
 /**
@@ -90,53 +92,53 @@ async function fetchVersionsAndTags(packageName, log) {
  * Uses a cache to avoid over-fetching from the registry.
  */
 export async function getVersionsAndTags(packageName, log) {
-  const cacheKey = `versions-${packageName}`;
-  const cacheValue = cache.get(cacheKey);
+    const cacheKey = `versions-${packageName}`;
+    const cacheValue = cache.get(cacheKey);
 
-  if (cacheValue != null) {
-    return cacheValue === notFound ? null : JSON.parse(cacheValue);
-  }
+    if (cacheValue != null) {
+        return cacheValue === notFound ? null : JSON.parse(cacheValue);
+    }
 
-  const value = await fetchVersionsAndTags(packageName, log);
+    const value = await fetchVersionsAndTags(packageName, log);
 
-  if (value == null) {
-    cache.set(cacheKey, notFound, 5 * oneMinute);
-    return null;
-  }
+    if (value == null) {
+        cache.set(cacheKey, notFound, 5 * oneMinute);
+        return null;
+    }
 
-  cache.set(cacheKey, JSON.stringify(value), oneMinute);
-  return value;
+    cache.set(cacheKey, JSON.stringify(value), oneMinute);
+    return value;
 }
 
 // All the keys that sometimes appear in package info
 // docs that we don't need. There are probably more.
 const packageConfigExcludeKeys = [
-  'browserify',
-  'bugs',
-  'directories',
-  'engines',
-  'files',
-  'homepage',
-  'keywords',
-  'maintainers',
-  'scripts'
+    'browserify',
+    'bugs',
+    'directories',
+    'engines',
+    'files',
+    'homepage',
+    'keywords',
+    'maintainers',
+    'scripts'
 ];
 
 function cleanPackageConfig(config) {
-  return Object.keys(config).reduce((memo, key) => {
-    if (!key.startsWith('_') && !packageConfigExcludeKeys.includes(key)) {
-      memo[key] = config[key];
-    }
+    return Object.keys(config).reduce((memo, key) => {
+        if (!key.startsWith('_') && !packageConfigExcludeKeys.includes(key)) {
+            memo[key] = config[key];
+        }
 
-    return memo;
-  }, {});
+        return memo;
+    }, {});
 }
 
 async function fetchPackageConfig(packageName, version, log) {
-  const info = await fetchPackageInfo(packageName, log);
-  return info && info.versions && version in info.versions
-    ? cleanPackageConfig(info.versions[version])
-    : null;
+    const info = await fetchPackageInfo(packageName, log);
+    return info && info.versions && version in info.versions
+        ? cleanPackageConfig(info.versions[version])
+        : null;
 }
 
 /**
@@ -144,63 +146,119 @@ async function fetchPackageConfig(packageName, version, log) {
  * Uses a cache to avoid over-fetching from the registry.
  */
 export async function getPackageConfig(packageName, version, log) {
-  const cacheKey = `config-${packageName}-${version}`;
-  const cacheValue = cache.get(cacheKey);
+    const cacheKey = `config-${packageName}-${version}`;
+    const cacheValue = cache.get(cacheKey);
 
-  if (cacheValue != null) {
-    return cacheValue === notFound ? null : JSON.parse(cacheValue);
-  }
+    if (cacheValue != null) {
+        return cacheValue === notFound ? null : JSON.parse(cacheValue);
+    }
 
-  const value = await fetchPackageConfig(packageName, version, log);
+    const value = await fetchPackageConfig(packageName, version, log);
 
-  if (value == null) {
-    cache.set(cacheKey, notFound, 5 * oneMinute);
-    return null;
-  }
+    if (value == null) {
+        cache.set(cacheKey, notFound, 5 * oneMinute);
+        return null;
+    }
 
-  cache.set(cacheKey, JSON.stringify(value), oneMinute);
-  return value;
+    cache.set(cacheKey, JSON.stringify(value), oneMinute);
+    return value;
 }
 
 /**
  * Returns a stream of the tarball'd contents of the given package.
  */
-export async function getPackage(packageName, version, log) {
-  const tarballName = isScopedPackageName(packageName)
-    ? packageName.split('/')[1]
-    : packageName;
-  const tarballURL = `${npmRegistryURL}/${packageName}/-/${tarballName}-${version}.tgz`;
+export function fetchPackage(log) {
+    return async (packageName, version) => {
+        const tarballName = isScopedPackageName(packageName)
+            ? packageName.split('/')[1]
+            : packageName;
+        const tarballURL = `${npmRegistryURL}/${packageName}/-/${tarballName}-${version}.tgz`;
 
-  log.debug('Fetching package for %s from %s', packageName, tarballURL);
+        log.debug('Fetching package for %s from %s', packageName, tarballURL);
 
-  const { hostname, pathname } = url.parse(tarballURL);
-  const options = {
-    agent: agent,
-    hostname: hostname,
-    path: pathname
-  };
+        const { hostname, pathname } = url.parse(tarballURL);
+        const options = {
+            agent: agent,
+            hostname: hostname,
+            path: pathname
+        };
 
-  const res = await get(options);
+        const res = await get(options);
 
-  if (res.statusCode === 200) {
-    const stream = res.pipe(gunzip());
-    // stream.pause();
-    return stream;
-  }
+        if (res.statusCode === 200) {
+            const stream = res.pipe(gunzip());
+            // stream.pause();
+            return stream;
+        }
 
-  if (res.statusCode === 404) {
-    return null;
-  }
+        if (res.statusCode === 404) {
+            return null;
+        }
 
-  const content = (await bufferStream(res)).toString('utf-8');
+        const content = (await bufferStream(res)).toString('utf-8');
 
-  log.error(
-    'Error fetching tarball for %s@%s (status: %s)',
-    packageName,
-    version,
-    res.statusCode
-  );
-  log.error(content);
+        log.error(
+            'Error fetching tarball for %s@%s (status: %s)',
+            packageName,
+            version,
+            res.statusCode
+        );
+        log.error(content);
 
-  return null;
+        return null;
+    };
+}
+
+export const packageCache = new LRUCache({
+    max: 1024 * 1024 * 500,
+    ttl: 1000 * 60 * 5
+});
+
+export function createReadableStreamFromBuffer(buffer) {
+    const readable = new stream.Readable({
+        read(size) {
+            if (this.pos >= buffer.length) {
+                return this.push(null);
+            }
+            const chunk = buffer.slice(this.pos, this.pos + size);
+            this.push(chunk);
+            this.pos += chunk.length;
+        }
+    });
+
+    readable.pos = 0;
+    readable.push(buffer);
+
+    return readable;
+}
+
+export async function useStreamCache(any, ...args) {
+    const key = args.join('@');
+    const value = packageCache.get(key);
+
+    if (value) {
+        return createReadableStreamFromBuffer(value);
+    }
+
+    const result = await any(...args);
+
+    let buffer = Buffer.from('');
+
+    const output = new stream.Writable({
+        write(chunk, encoding, callback) {
+            buffer = Buffer.concat([buffer, chunk]);
+            callback();
+        },
+        final() {
+            packageCache.set(key, buffer);
+        }
+    });
+
+    result.pipe(output);
+
+    return result;
+}
+
+export function getPackage(packageName, version, log) {
+    return useStreamCache(fetchPackage(log), packageName, version);
 }

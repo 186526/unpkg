@@ -10,34 +10,34 @@ const url = require('@rollup/plugin-url');
 const entryManifest = require('./plugins/entryManifest.cjs');
 
 const buildId =
-  process.env.BUILD_ID ||
-  execSync('git rev-parse --short HEAD').toString().trim();
+    process.env.BUILD_ID ||
+    execSync('git rev-parse --short HEAD').toString().trim();
 
 const manifest = entryManifest();
 
 const packageJson = require('./package.json');
 
 const server = {
-  external: builtinModules.concat(Object.keys(packageJson.dependencies)),
-  input: 'modules/server.js',
-  output: { file: 'server.js', format: 'es' },
-  moduleContext: {
-    'node_modules/react-icons/lib/esm/iconBase.js': 'global'
-  },
-  plugins: [
-    manifest.inject({ virtualId: 'entry-manifest' }),
-    resolve(),
-    commonjs(),
-    url({
-      limit: 5 * 1024,
-      publicPath: '/_client/',
-      emitFiles: false
-    }),
-    replace({
-      'process.env.BUILD_ID': JSON.stringify(buildId)
-    }),
-    json()
-  ]
+    external: builtinModules.concat(Object.keys(packageJson.dependencies)),
+    input: 'modules/server.js',
+    output: { file: 'server.js', format: 'es' },
+    moduleContext: {
+        'node_modules/react-icons/lib/esm/iconBase.js': 'global'
+    },
+    plugins: [
+        manifest.inject({ virtualId: 'entry-manifest' }),
+        resolve(),
+        commonjs(),
+        url({
+            limit: 5 * 1024,
+            publicPath: '/_client/',
+            emitFiles: false
+        }),
+        replace({
+            'process.env.BUILD_ID': JSON.stringify(buildId)
+        }),
+        json()
+    ]
 };
 
 module.exports = server;
