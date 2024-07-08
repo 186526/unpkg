@@ -2,7 +2,8 @@ FROM node:alpine as builder
 
 COPY / ./
 
-RUN yarn install -D && yarn run build && ls -al -R
+RUN apk add git --no-cache && yarn install -D 
+RUN yarn run build && ls -al -R
 
 FROM node:alpine
 
