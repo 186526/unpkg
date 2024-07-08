@@ -1,10 +1,8 @@
 FROM node:alpine as builder
 
-RUN npm install pnpm -g
-
 COPY / ./
 
-RUN pnpm install -D && pnpm run build && ls -al -R
+RUN npm install -D && npm run build && ls -al -R
 
 FROM node:alpine
 
