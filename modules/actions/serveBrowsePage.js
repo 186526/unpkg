@@ -2,7 +2,6 @@ import semver from 'semver';
 
 import asyncHandler from '../utils/asyncHandler.js';
 import { getVersionsAndTags } from '../utils/npm.js';
-import { packageCache } from '../utils/npm.js';
 
 import { filesize } from 'filesize';
 
