@@ -11,7 +11,7 @@ export default {
 
         if (url.pathname.startsWith('/')) {
             // eslint-disable-next-line no-undef
-            url.hostname = platform.env.hostname;
+            url.hostname = context.env.hostname;
             url.protocol = 'http';
             let new_request = new Request(url, request);
             return fetch(new_request, {
