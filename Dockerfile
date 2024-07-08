@@ -10,6 +10,6 @@ FROM node:alpine
 COPY --from=builder server.js ./
 COPY --from=builder package.json ./
 
-RUN npm install pm2 pnpm -g && pnpm install
+RUN npm install pnpm -g && pnpm install -g pm2 && pnpm install -P
 
 CMD [ "pm2-runtime", "start", "pm2.json" ]
