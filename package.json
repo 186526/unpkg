@@ -8,8 +8,7 @@
     "lint": "eslint .",
     "serve": "nodemon -w server.js server.js",
     "test": "jest",
-    "watch": "rollup -c -w",
-    "postinstall": "npm run build"
+    "watch": "rollup -c -w"
   },
   "dependencies": {
     "@babel/core": "^7.24.7",
