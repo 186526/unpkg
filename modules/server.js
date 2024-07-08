@@ -37,6 +37,11 @@ App.enable('strict routing');
 
 App.use('/npm', (req, resp, next) => {
     unpkgServer(req, resp);
+    if (resp.statusCode >= 300 && resp.statusCode < 400) {
+        if (!resp.header['Location'].startsWith('/npm')) {
+            resp.header['Location'] = '/npm' + resp.header['Location'];
+        }
+    }
 });
 
 App.use('/avatar', cache, gravatar);

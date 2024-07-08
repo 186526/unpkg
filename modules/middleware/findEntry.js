@@ -6,7 +6,7 @@ import bufferStream from '../utils/bufferStream.js';
 import createPackageURL from '../utils/createPackageURL.js';
 import getContentType from '../utils/getContentType.js';
 import getIntegrity from '../utils/getIntegrity.js';
-import { getPackage, packageCache } from '../utils/npm.js';
+import { getPackage } from '../utils/npm.js';
 
 function fileRedirect(req, res, entry) {
     // Redirect to the file with the extension so it's
@@ -16,12 +16,13 @@ function fileRedirect(req, res, entry) {
         'Cache-Tag': 'redirect, file-redirect'
     }).redirect(
         302,
-        createPackageURL(
-            req.packageName,
-            req.packageVersion,
-            entry.path,
-            req.query
-        )
+        req.baseUrl +
+            createPackageURL(
+                req.packageName,
+                req.packageVersion,
+                entry.path,
+                req.query
+            )
     );
 }
 
@@ -33,12 +34,13 @@ function indexRedirect(req, res, entry) {
         'Cache-Tag': 'redirect, index-redirect'
     }).redirect(
         302,
-        createPackageURL(
-            req.packageName,
-            req.packageVersion,
-            entry.path,
-            req.query
-        )
+        req.baseUrl +
+            createPackageURL(
+                req.packageName,
+                req.packageVersion,
+                entry.path,
+                req.query
+            )
     );
 }
 

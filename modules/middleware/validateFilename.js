@@ -57,12 +57,13 @@ function filenameRedirect(req, res) {
         'Cache-Tag': 'redirect, filename-redirect'
     }).redirect(
         302,
-        createPackageURL(
-            req.packageName,
-            req.packageVersion,
-            filename.replace(/^[./]*/, '/'),
-            req.query
-        )
+        req.baseUrl +
+            createPackageURL(
+                req.packageName,
+                req.packageVersion,
+                filename.replace(/^[./]*/, '/'),
+                req.query
+            )
     );
 }
 
