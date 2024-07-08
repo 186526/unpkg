@@ -2,7 +2,7 @@ FROM node:alpine as builder
 
 COPY / ./
 
-RUN npm install -D && npm run build && ls -al -R
+RUN yarn install -D && yarn run build && ls -al -R
 
 FROM node:alpine
 
