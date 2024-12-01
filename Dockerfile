@@ -2,8 +2,7 @@ FROM node:alpine as builder
 
 COPY / ./
 
-RUN sed -i 's/dl-cdn.alpinelinux.org/ap.edge.kernel.org/g' /etc/apk/repositories && \
-    apk add git --no-cache && yarn install -D 
+RUN apk add git --no-cache && yarn install -D 
 RUN yarn run build && ls -al -R
 
 FROM node:alpine
