@@ -11,6 +11,6 @@ COPY --from=builder server.js ./
 COPY --from=builder package.json ./
 COPY --from=builder pm2.json ./
 
-RUN yarn global add pnpm pm2 && pnpm install -P
+RUN yarn global add pm2 && yarn --ci
 
 CMD [ "pm2-runtime", "start", "pm2.json" ]
