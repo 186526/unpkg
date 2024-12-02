@@ -1,5 +1,5 @@
 import etag from 'etag';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 
 import getContentTypeHeader from '../utils/getContentTypeHeader.js';
 import rewriteBareModuleIdentifiers from '../utils/rewriteBareModuleIdentifiers.js';
