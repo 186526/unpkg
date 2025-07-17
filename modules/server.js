@@ -46,7 +46,8 @@ App.use('/npm', cache, (req, resp, next) => {
 });
 
 App.use('/avatar', cache, gravatar);
-App.use('/badge', cache, shieldsIo);
+App.use('/badge', cache, shieldsIo('badge'));
+App.use('/shields.io', cache, shieldsIo(''));
 
 App.use('/api', api(apicache));
 
