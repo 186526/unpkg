@@ -4,6 +4,7 @@ import apicache from 'apicache';
 
 import gravatar from './proxy/gravatar';
 import api from './proxy/api';
+import shieldsIo from './proxy/shields.io';
 
 apicache.options({
     statusCodes: { include: [200] },
@@ -35,7 +36,7 @@ App.disable('x-powered-by');
 App.enable('trust proxy');
 App.enable('strict routing');
 
-App.use('/npm', (req, resp, next) => {
+App.use('/npm', cache, (req, resp, next) => {
     unpkgServer(req, resp);
     if (resp.statusCode >= 300 && resp.statusCode < 400) {
         if (!resp.header['Location'].startsWith('/npm')) {
@@ -45,6 +46,7 @@ App.use('/npm', (req, resp, next) => {
 });
 
 App.use('/avatar', cache, gravatar);
+App.use('/badge', cache, shieldsIo);
 
 App.use('/api', api(apicache));
 
